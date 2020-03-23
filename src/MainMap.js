@@ -1,11 +1,20 @@
 /* global google */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { compose, withProps } from "recompose";
-import { GoogleMap, withScriptjs, withGoogleMap } from "react-google-maps";
-import { MarkerWithLabel } from "react-google-maps/lib/components/addons/MarkerWithLabel";
+import {
+  GoogleMap,
+  withScriptjs,
+  withGoogleMap,
+  InfoWindow,
+  Marker,
+} from "react-google-maps";
 import { MAP_API_KEY } from "./keys";
 import useDefaultCenter from "./useDefaultCenter";
 import hospitals from "./data/hospitals.json";
+// import { MarkerWithLabel } from "react-google-maps/lib/components/addons/MarkerWithLabel";
+const {
+  MarkerClusterer,
+} = require("react-google-maps/lib/components/addons/MarkerClusterer");
 
 // "id": "1",
 // "biz_provider_id": "320060",
@@ -48,53 +57,71 @@ const MainMap = compose(
   withGoogleMap
 )(() => {
   const mapRef = useRef();
-  const defaultZoom = 8;
+  const defaultZoom = 5;
+
+  const [activeInfoId, setActiveInfoId] = useState();
   const [zoom, setZoom] = useState(defaultZoom);
-  const handleZoomChanged = () => {
-    setZoom(mapRef.current.getZoom());
-  };
   const defaultCenter = useDefaultCenter();
+
+  const handleZoomChanged = useCallback(() => {
+    setZoom(mapRef.current.getZoom());
+  }, []);
   if (!defaultCenter) {
     return null;
   }
   return (
     <GoogleMap
-      defaultZoom={8}
+      defaultZoom={defaultZoom}
       defaultCenter={defaultCenter}
       ref={mapRef}
       onZoomChanged={handleZoomChanged}
+      onClick={() => {
+        setActiveInfoId(null);
+      }}
     >
-      {hospitals.map(
-        ({
-          id,
-          loc_LAT_centroid: lat,
-          loc_LONG_centroid: lng,
-          biz_name: name,
-          e_address: address,
-          e_city: city,
-          e_state: state,
-          e_postal: zip,
-        }) => (
-          <MarkerWithLabel
-            key={id}
-            position={{ lat: parseFloat(lat), lng: parseFloat(lng) }}
-            labelAnchor={new google.maps.Point(0, 0)}
-            labelStyle={{
-              backgroundColor: "yellow",
-              fontSize: `${zoom * 4}px`,
-              padding: `${zoom * 2}px`,
-            }}
-          >
-            <div>
-              <div>{name}</div>
-              <div>{address}</div>
-              <div>
-                {city}, {state} {zip}
-              </div>
-            </div>
-          </MarkerWithLabel>
-        )
-      )}
+      <MarkerClusterer
+        averageCenter
+        enableRetinaIcons
+        gridSize={60}
+        maxZoom={15}
+      >
+        {hospitals.map(
+          ({
+            id,
+            loc_LAT_centroid: lat,
+            loc_LONG_centroid: lng,
+            biz_name: name,
+            e_address: address,
+            e_city: city,
+            e_state: state,
+            e_postal: zip,
+          }) => (
+            <Marker
+              key={id}
+              onClick={() => {
+                setActiveInfoId(activeInfoId === id ? null : id);
+              }}
+              position={{ lat: parseFloat(lat), lng: parseFloat(lng) }}
+            >
+              {id === activeInfoId ? (
+                <InfoWindow
+                  onCloseClick={() => {
+                    setActiveInfoId(null);
+                  }}
+                >
+                  <div>
+                    <div>{name}</div>
+                    <div>{address}</div>
+                    <div>
+                      {city}, {state} {zip}
+                    </div>
+                  </div>
+                </InfoWindow>
+              ) : null}
+            </Marker>
+          )
+        )}
+      </MarkerClusterer>
     </GoogleMap>
   );
 });
