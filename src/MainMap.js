@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useMemo, useState, useRef, useCallback } from "react";
 import { compose, withProps } from "recompose";
 import {
   GoogleMap,
@@ -9,8 +9,7 @@ import {
 } from "react-google-maps";
 import { MAP_API_KEY } from "./keys";
 import useDefaultCenter from "./useDefaultCenter";
-import hospitals from "./data/hospitals.json";
-// import { MarkerWithLabel } from "react-google-maps/lib/components/addons/MarkerWithLabel";
+import hospitalsRaw from "./data/hospitals.json";
 const {
   MarkerClusterer,
 } = require("react-google-maps/lib/components/addons/MarkerClusterer");
@@ -62,6 +61,46 @@ const MainMap = compose(
   // eslint-disable-next-line no-unused-vars
   const [zoom, setZoom] = useState(defaultZoom);
   const defaultCenter = useDefaultCenter();
+  const hospitals = useMemo(
+    () =>
+      hospitalsRaw.map(
+        ({
+          id,
+          loc_LAT_poly: lat,
+          loc_LONG_poly: lng,
+          biz_name: name,
+          e_address: address,
+          e_city: city,
+          e_state: state,
+          e_postal: zip,
+          biz_phone: phone,
+        }) => ({
+          id,
+          lat: parseFloat(lat),
+          lng: parseFloat(lng),
+          name,
+          address,
+          city,
+          state,
+          zip,
+          phone,
+        })
+      ),
+    []
+  );
+
+  // original here: https://github.com/googlemaps/v3-utility-library/blob/5d5430fcf737b19dd53b0c9b9e04dcf23db6f980/packages/markerclustererplus/src/markerclusterer.ts#L1148
+  const calculator = useCallback((markers = []) => {
+    return {
+      text: markers.length.toString(),
+      // this is the index of the styles array to use
+      //  the default has 3 circular background images - blue, yellow, and red
+      //  i don't want to show yellow and red because it looks like a warning,
+      //  so for now I'm just showing blue
+      index: 0,
+      title: "",
+    };
+  }, []);
 
   const handleZoomChanged = useCallback(() => {
     setZoom(mapRef.current.getZoom());
@@ -84,25 +123,16 @@ const MainMap = compose(
         enableRetinaIcons
         gridSize={60}
         maxZoom={15}
+        calculator={calculator}
       >
         {hospitals.map(
-          ({
-            id,
-            loc_LAT_centroid: lat,
-            loc_LONG_centroid: lng,
-            biz_name: name,
-            e_address: address,
-            e_city: city,
-            e_state: state,
-            e_postal: zip,
-            biz_phone: phone,
-          }) => (
+          ({ id, lat, lng, name, address, city, state, zip, phone }) => (
             <Marker
               key={id}
               onClick={() => {
                 setActiveInfoId(activeInfoId === id ? null : id);
               }}
-              position={{ lat: parseFloat(lat), lng: parseFloat(lng) }}
+              position={{ lat, lng }}
             >
               {id === activeInfoId ? (
                 <InfoWindow

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const backupDefaultCenter = { lat: -34.397, lng: 150.644 };
+const backupDefaultCenter = { lat: 40.6971494, lng: -74.2598655 };
 const useDefaultCenter = () => {
   const [defaultCenter, setDefaultCenter] = useState();
   // Try HTML5 geolocation.
