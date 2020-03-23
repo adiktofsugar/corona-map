@@ -1,4 +1,3 @@
-/* global google */
 import React, { useState, useRef, useCallback } from "react";
 import { compose, withProps } from "recompose";
 import {
@@ -60,6 +59,7 @@ const MainMap = compose(
   const defaultZoom = 5;
 
   const [activeInfoId, setActiveInfoId] = useState();
+  // eslint-disable-next-line no-unused-vars
   const [zoom, setZoom] = useState(defaultZoom);
   const defaultCenter = useDefaultCenter();
 
@@ -95,6 +95,7 @@ const MainMap = compose(
             e_city: city,
             e_state: state,
             e_postal: zip,
+            biz_phone: phone,
           }) => (
             <Marker
               key={id}
@@ -115,6 +116,7 @@ const MainMap = compose(
                     <div>
                       {city}, {state} {zip}
                     </div>
+                    {phone ? <div>{phone}</div> : null}
                   </div>
                 </InfoWindow>
               ) : null}
